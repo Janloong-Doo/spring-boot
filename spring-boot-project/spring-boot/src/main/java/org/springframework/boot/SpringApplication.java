@@ -256,11 +256,17 @@ public class SpringApplication {
 	public ConfigurableApplicationContext run(String... args) {
 		//时间监控，监控服务的启动时间
 		StopWatch stopWatch = new StopWatch();
+		//时间监控开始
 		stopWatch.start();
 		ConfigurableApplicationContext context = null;
 		Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList<>();
+		//java.awt.headless是J2SE的一种模式用于在缺少显示屏、键盘或者鼠标时的系统配置，很多监控工具如jconsole 需要将该值设置为true，系统变量默认为true
 		configureHeadlessProperty();
+
+		//获取spring.factories中的监听器变量，args为参数变量数组，为main方法入口的args
+		//SpringApplicationRunListeners是linsterner的一个实体集合，
 		SpringApplicationRunListeners listeners = getRunListeners(args);
+
 		listeners.starting();
 		try {
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(
