@@ -266,23 +266,33 @@ public class SpringApplication {
 		//获取spring.factories中的监听器变量，args为参数变量数组，为main方法入口的args
 		//SpringApplicationRunListeners是linsterner的一个实体集合，
 		SpringApplicationRunListeners listeners = getRunListeners(args);
-
+		//启动监听器 实际为EventPublishingRunListener （是springboot框架中最早执行的框架） ,会发布一个应用启动的事件
 		listeners.starting();
 		try {
+			//初始化应用参数
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(
 					args);
+			//构造容器环境
 			ConfigurableEnvironment environment = prepareEnvironment(listeners,
 					applicationArguments);
+			//配置要忽略的bean类
 			configureIgnoreBeanInfo(environment);
+			//打印banner
 			Banner printedBanner = printBanner(environment);
+			//创建容器环境上下文
 			context = createApplicationContext();
+			//实例化SpringBootExceptionReporter,用于支持报告关于启动的错误
 			exceptionReporters = getSpringFactoriesInstances(
 					SpringBootExceptionReporter.class,
 					new Class[]{ConfigurableApplicationContext.class}, context);
+			//准备容器上下文环境
 			prepareContext(context, environment, listeners, applicationArguments,
 					printedBanner);
+			//刷新容器上下文环境
 			refreshContext(context);
+			//刷新容器后的扩展接口
 			afterRefresh(context, applicationArguments);
+			//时间监控停止
 			stopWatch.stop();
 			if (this.logStartupInfo) {
 				new StartupInfoLogger(this.mainApplicationClass)
@@ -304,13 +314,25 @@ public class SpringApplication {
 		return context;
 	}
 
+	/**
+	 * 环境构建
+	 *
+	 * @param listeners
+	 * @param applicationArguments
+	 * @author <a href ="mailto: janloongdoo@gmail.com">Janloong</a>
+	 * @date 2019/6/5 16:45
+	 **/
 	private ConfigurableEnvironment prepareEnvironment(
 			SpringApplicationRunListeners listeners,
 			ApplicationArguments applicationArguments) {
+		//获取或创建配置环境
 		// Create and configure the environment
 		ConfigurableEnvironment environment = getOrCreateEnvironment();
+		//配置环境信息  包括配置文件信息，命令行参数信息
 		configureEnvironment(environment, applicationArguments.getSourceArgs());
+		//发布-环境已经准备事件，自应用启动第二次发布事件
 		listeners.environmentPrepared(environment);
+		//绑定配置属性到容器绑定对象    （处理了配置文件的信息到容器绑定对象）
 		bindToSpringApplication(environment);
 		if (!this.isCustomEnvironment) {
 			environment = new EnvironmentConverter(getClassLoader())
@@ -375,8 +397,16 @@ public class SpringApplication {
 				SYSTEM_PROPERTY_JAVA_AWT_HEADLESS, Boolean.toString(this.headless)));
 	}
 
+	/**
+	 * 获取所有的监听器
+	 *
+	 * @author <a href ="mailto: janloongdoo@gmail.com">Janloong</a>
+	 * @date 2019/6/5 13:42
+	 **/
 	private SpringApplicationRunListeners getRunListeners(String[] args) {
+		//参数类型，用于后续匹配相应的构造方法 从而匹配相应的实例bean
 		Class<?>[] types = new Class<?>[]{SpringApplication.class, String[].class};
+		//通过工厂方法获取相应的类型的runlisterner 从而初始化 runlisteners集合类，
 		return new SpringApplicationRunListeners(logger, getSpringFactoriesInstances(
 				SpringApplicationRunListener.class, types, this, args));
 	}
@@ -385,29 +415,64 @@ public class SpringApplication {
 		return getSpringFactoriesInstances(type, new Class<?>[]{});
 	}
 
+	/**
+	 * 根据接口类型获取factories中的实例类
+	 *
+	 * @param type           接口类型或抽象类类型
+	 * @param parameterTypes 构造参数类型
+	 * @param args           spring入参类型
+	 * @param <T>
+	 * @return
+	 * @author <a href ="mailto: janloongdoo@gmail.com">Janloong</a>
+	 * @date 2019/6/5 13:38
+	 */
 	private <T> Collection<T> getSpringFactoriesInstances(Class<T> type,
 														  Class<?>[] parameterTypes, Object... args) {
+		//获取类加载器
 		ClassLoader classLoader = getClassLoader();
+		//通过spring工厂加载器，根据实体或接口类型。获取相应类型的bean的名称
+		//工厂加载器是在指定的目录下读取所有的配置的bean名称。然后根据接口名称筛选出相应的bean的包路径名称
 		// Use names and ensure unique to protect against duplicates
 		Set<String> names = new LinkedHashSet<>(
 				SpringFactoriesLoader.loadFactoryNames(type, classLoader));
+		//参数：接口类型，构造参数类型，加载器，应用参数，接口相应的实体类型名称结合
+		//根据相应的参数创建对应的实例bean
 		List<T> instances = createSpringFactoriesInstances(type, parameterTypes,
 				classLoader, args, names);
+		//根据spring的order排序实例bean的顺序
 		AnnotationAwareOrderComparator.sort(instances);
 		return instances;
 	}
 
+	/**
+	 * 创建spring工厂实例
+	 *
+	 * @param type           接口类型或抽象类类型
+	 * @param parameterTypes 构造参数类型
+	 * @param classLoader    类加载器
+	 * @param args           应用入参
+	 * @param names          接口类型对应的实例类完整路径
+	 * @param <T>
+	 * @return
+	 * @author <a href ="mailto: janloongdoo@gmail.com">Janloong</a>
+	 * @date 2019/6/5 11:36
+	 **/
 	@SuppressWarnings("unchecked")
 	private <T> List<T> createSpringFactoriesInstances(Class<T> type,
 													   Class<?>[] parameterTypes, ClassLoader classLoader, Object[] args,
 													   Set<String> names) {
+
 		List<T> instances = new ArrayList<>(names.size());
 		for (String name : names) {
 			try {
+				//通过反射获取到类
 				Class<?> instanceClass = ClassUtils.forName(name, classLoader);
+				//校验获取到的类是否是指定的接口类型
 				Assert.isAssignable(type, instanceClass);
+				//根据构造参数类型获取相应的构造方法
 				Constructor<?> constructor = instanceClass
 						.getDeclaredConstructor(parameterTypes);
+				//根据构造方法和参数实例化bean
 				T instance = (T) BeanUtils.instantiateClass(constructor, args);
 				instances.add(instance);
 			} catch (Throwable ex) {
@@ -449,7 +514,9 @@ public class SpringApplication {
 			environment.setConversionService(
 					(ConfigurableConversionService) conversionService);
 		}
+		//配置环境属性相关信息
 		configurePropertySources(environment, args);
+		//配置文件的配置
 		configureProfiles(environment, args);
 	}
 
@@ -462,11 +529,14 @@ public class SpringApplication {
 	 */
 	protected void configurePropertySources(ConfigurableEnvironment environment,
 											String[] args) {
+		//获取可配置的属性源
 		MutablePropertySources sources = environment.getPropertySources();
+		//默认属性不为空时添加默认属性
 		if (this.defaultProperties != null && !this.defaultProperties.isEmpty()) {
 			sources.addLast(
 					new MapPropertySource("defaultProperties", this.defaultProperties));
 		}
+		//支持命令行属性配置时，可读取命令行参数配置
 		if (this.addCommandLineProperties && args.length > 0) {
 			String name = CommandLinePropertySource.COMMAND_LINE_PROPERTY_SOURCE_NAME;
 			if (sources.contains(name)) {
@@ -492,10 +562,12 @@ public class SpringApplication {
 	 * @see org.springframework.boot.context.config.ConfigFileApplicationListener
 	 */
 	protected void configureProfiles(ConfigurableEnvironment environment, String[] args) {
+		//获取多环境配置文件
 		environment.getActiveProfiles(); // ensure they are initialized
 		// But these ones should go first (last wins in a property key clash)
 		Set<String> profiles = new LinkedHashSet<>(this.additionalProfiles);
 		profiles.addAll(Arrays.asList(environment.getActiveProfiles()));
+		//设置激活的配置文件
 		environment.setActiveProfiles(StringUtils.toStringArray(profiles));
 	}
 

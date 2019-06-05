@@ -16,28 +16,9 @@
 
 package org.springframework.boot.context.properties.bind;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
 import org.springframework.beans.PropertyEditorRegistry;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.boot.context.properties.source.ConfigurationProperty;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyState;
+import org.springframework.boot.context.properties.source.*;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
@@ -45,9 +26,13 @@ import org.springframework.core.env.Environment;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.util.Assert;
 
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 /**
- * A container object which Binds objects from one or more
- * {@link ConfigurationPropertySource ConfigurationPropertySources}.
+ * A container object which Binds objects from one or more {@link ConfigurationPropertySource ConfigurationPropertySources}. 一个容器绑定对象
  *
  * @author Phillip Webb
  * @author Madhura Bhave
@@ -75,8 +60,8 @@ public class Binder {
 	private final Consumer<PropertyEditorRegistry> propertyEditorInitializer;
 
 	/**
-	 * Create a new {@link Binder} instance for the specified sources. A
-	 * {@link DefaultFormattingConversionService} will be used for all conversion.
+	 * Create a new {@link Binder} instance for the specified sources. A {@link DefaultFormattingConversionService} will be used for all conversion.
+	 *
 	 * @param sources the sources used for binding
 	 */
 	public Binder(ConfigurationPropertySource... sources) {
@@ -84,8 +69,8 @@ public class Binder {
 	}
 
 	/**
-	 * Create a new {@link Binder} instance for the specified sources. A
-	 * {@link DefaultFormattingConversionService} will be used for all conversion.
+	 * Create a new {@link Binder} instance for the specified sources. A {@link DefaultFormattingConversionService} will be used for all conversion.
+	 *
 	 * @param sources the sources used for binding
 	 */
 	public Binder(Iterable<ConfigurationPropertySource> sources) {
@@ -94,41 +79,41 @@ public class Binder {
 
 	/**
 	 * Create a new {@link Binder} instance for the specified sources.
-	 * @param sources the sources used for binding
+	 *
+	 * @param sources              the sources used for binding
 	 * @param placeholdersResolver strategy to resolve any property placeholders
 	 */
 	public Binder(Iterable<ConfigurationPropertySource> sources,
-			PlaceholdersResolver placeholdersResolver) {
+				  PlaceholdersResolver placeholdersResolver) {
 		this(sources, placeholdersResolver, null, null);
 	}
 
 	/**
 	 * Create a new {@link Binder} instance for the specified sources.
-	 * @param sources the sources used for binding
+	 *
+	 * @param sources              the sources used for binding
 	 * @param placeholdersResolver strategy to resolve any property placeholders
-	 * @param conversionService the conversion service to convert values (or {@code null}
-	 * to use {@link ApplicationConversionService})
+	 * @param conversionService    the conversion service to convert values (or {@code null} to use {@link ApplicationConversionService})
 	 */
 	public Binder(Iterable<ConfigurationPropertySource> sources,
-			PlaceholdersResolver placeholdersResolver,
-			ConversionService conversionService) {
+				  PlaceholdersResolver placeholdersResolver,
+				  ConversionService conversionService) {
 		this(sources, placeholdersResolver, conversionService, null);
 	}
 
 	/**
 	 * Create a new {@link Binder} instance for the specified sources.
-	 * @param sources the sources used for binding
-	 * @param placeholdersResolver strategy to resolve any property placeholders
-	 * @param conversionService the conversion service to convert values (or {@code null}
-	 * to use {@link ApplicationConversionService})
-	 * @param propertyEditorInitializer initializer used to configure the property editors
-	 * that can convert values (or {@code null} if no initialization is required). Often
-	 * used to call {@link ConfigurableListableBeanFactory#copyRegisteredEditorsTo}.
+	 *
+	 * @param sources                   the sources used for binding
+	 * @param placeholdersResolver      strategy to resolve any property placeholders
+	 * @param conversionService         the conversion service to convert values (or {@code null} to use {@link ApplicationConversionService})
+	 * @param propertyEditorInitializer initializer used to configure the property editors that can convert values (or {@code null} if no initialization is required). Often used to call {@link
+	 *                                  ConfigurableListableBeanFactory#copyRegisteredEditorsTo}.
 	 */
 	public Binder(Iterable<ConfigurationPropertySource> sources,
-			PlaceholdersResolver placeholdersResolver,
-			ConversionService conversionService,
-			Consumer<PropertyEditorRegistry> propertyEditorInitializer) {
+				  PlaceholdersResolver placeholdersResolver,
+				  ConversionService conversionService,
+				  Consumer<PropertyEditorRegistry> propertyEditorInitializer) {
 		Assert.notNull(sources, "Sources must not be null");
 		this.sources = sources;
 		this.placeholdersResolver = (placeholdersResolver != null) ? placeholdersResolver
@@ -139,11 +124,11 @@ public class Binder {
 	}
 
 	/**
-	 * Bind the specified target {@link Class} using this binder's
-	 * {@link ConfigurationPropertySource property sources}.
-	 * @param name the configuration property name to bind
+	 * Bind the specified target {@link Class} using this binder's {@link ConfigurationPropertySource property sources}.
+	 *
+	 * @param name   the configuration property name to bind
 	 * @param target the target class
-	 * @param <T> the bound type
+	 * @param <T>    the bound type
 	 * @return the binding result (never {@code null})
 	 * @see #bind(ConfigurationPropertyName, Bindable, BindHandler)
 	 */
@@ -152,11 +137,11 @@ public class Binder {
 	}
 
 	/**
-	 * Bind the specified target {@link Bindable} using this binder's
-	 * {@link ConfigurationPropertySource property sources}.
-	 * @param name the configuration property name to bind
+	 * Bind the specified target {@link Bindable} using this binder's {@link ConfigurationPropertySource property sources}.
+	 *
+	 * @param name   the configuration property name to bind
 	 * @param target the target bindable
-	 * @param <T> the bound type
+	 * @param <T>    the bound type
 	 * @return the binding result (never {@code null})
 	 * @see #bind(ConfigurationPropertyName, Bindable, BindHandler)
 	 */
@@ -165,11 +150,11 @@ public class Binder {
 	}
 
 	/**
-	 * Bind the specified target {@link Bindable} using this binder's
-	 * {@link ConfigurationPropertySource property sources}.
-	 * @param name the configuration property name to bind
+	 * Bind the specified target {@link Bindable} using this binder's {@link ConfigurationPropertySource property sources}.
+	 *
+	 * @param name   the configuration property name to bind
 	 * @param target the target bindable
-	 * @param <T> the bound type
+	 * @param <T>    the bound type
 	 * @return the binding result (never {@code null})
 	 * @see #bind(ConfigurationPropertyName, Bindable, BindHandler)
 	 */
@@ -178,12 +163,12 @@ public class Binder {
 	}
 
 	/**
-	 * Bind the specified target {@link Bindable} using this binder's
-	 * {@link ConfigurationPropertySource property sources}.
-	 * @param name the configuration property name to bind
-	 * @param target the target bindable
+	 * Bind the specified target {@link Bindable} using this binder's {@link ConfigurationPropertySource property sources}.
+	 *
+	 * @param name    the configuration property name to bind
+	 * @param target  the target bindable
 	 * @param handler the bind handler (may be {@code null})
-	 * @param <T> the bound type
+	 * @param <T>     the bound type
 	 * @return the binding result (never {@code null})
 	 */
 	public <T> BindResult<T> bind(String name, Bindable<T> target, BindHandler handler) {
@@ -191,16 +176,16 @@ public class Binder {
 	}
 
 	/**
-	 * Bind the specified target {@link Bindable} using this binder's
-	 * {@link ConfigurationPropertySource property sources}.
-	 * @param name the configuration property name to bind
-	 * @param target the target bindable
+	 * Bind the specified target {@link Bindable} using this binder's {@link ConfigurationPropertySource property sources}.
+	 *
+	 * @param name    the configuration property name to bind
+	 * @param target  the target bindable
 	 * @param handler the bind handler (may be {@code null})
-	 * @param <T> the bound type
+	 * @param <T>     the bound type
 	 * @return the binding result (never {@code null})
 	 */
 	public <T> BindResult<T> bind(ConfigurationPropertyName name, Bindable<T> target,
-			BindHandler handler) {
+								  BindHandler handler) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(target, "Target must not be null");
 		handler = (handler != null) ? handler : BindHandler.DEFAULT;
@@ -210,7 +195,7 @@ public class Binder {
 	}
 
 	protected final <T> T bind(ConfigurationPropertyName name, Bindable<T> target,
-			BindHandler handler, Context context, boolean allowRecursiveBinding) {
+							   BindHandler handler, Context context, boolean allowRecursiveBinding) {
 		context.clearConfigurationProperty();
 		try {
 			target = handler.onStart(name, target, context);
@@ -220,14 +205,13 @@ public class Binder {
 			Object bound = bindObject(name, target, handler, context,
 					allowRecursiveBinding);
 			return handleBindResult(name, target, handler, context, bound);
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			return handleBindError(name, target, handler, context, ex);
 		}
 	}
 
 	private <T> T handleBindResult(ConfigurationPropertyName name, Bindable<T> target,
-			BindHandler handler, Context context, Object result) throws Exception {
+								   BindHandler handler, Context context, Object result) throws Exception {
 		if (result != null) {
 			result = handler.onSuccess(name, target, context, result);
 			result = context.getConverter().convert(result, target);
@@ -237,12 +221,11 @@ public class Binder {
 	}
 
 	private <T> T handleBindError(ConfigurationPropertyName name, Bindable<T> target,
-			BindHandler handler, Context context, Exception error) {
+								  BindHandler handler, Context context, Exception error) {
 		try {
 			Object result = handler.onFailure(name, target, context, error);
 			return context.getConverter().convert(result, target);
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			if (ex instanceof BindException) {
 				throw (BindException) ex;
 			}
@@ -251,7 +234,7 @@ public class Binder {
 	}
 
 	private <T> Object bindObject(ConfigurationPropertyName name, Bindable<T> target,
-			BindHandler handler, Context context, boolean allowRecursiveBinding) {
+								  BindHandler handler, Context context, boolean allowRecursiveBinding) {
 		ConfigurationProperty property = findProperty(name, context);
 		if (property == null && containsNoDescendantOf(context.getSources(), name)) {
 			return null;
@@ -263,8 +246,7 @@ public class Binder {
 		if (property != null) {
 			try {
 				return bindProperty(target, context, property);
-			}
-			catch (ConverterNotFoundException ex) {
+			} catch (ConverterNotFoundException ex) {
 				// We might still be able to bind it as a bean
 				Object bean = bindBean(name, target, handler, context,
 						allowRecursiveBinding);
@@ -292,7 +274,7 @@ public class Binder {
 	}
 
 	private <T> Object bindAggregate(ConfigurationPropertyName name, Bindable<T> target,
-			BindHandler handler, Context context, AggregateBinder<?> aggregateBinder) {
+									 BindHandler handler, Context context, AggregateBinder<?> aggregateBinder) {
 		AggregateElementBinder elementBinder = (itemName, itemTarget, source) -> {
 			boolean allowRecursiveBinding = aggregateBinder
 					.isAllowRecursiveBinding(source);
@@ -305,7 +287,7 @@ public class Binder {
 	}
 
 	private ConfigurationProperty findProperty(ConfigurationPropertyName name,
-			Context context) {
+											   Context context) {
 		if (name.isEmpty()) {
 			return null;
 		}
@@ -319,7 +301,7 @@ public class Binder {
 	}
 
 	private <T> Object bindProperty(Bindable<T> target, Context context,
-			ConfigurationProperty property) {
+									ConfigurationProperty property) {
 		context.setConfigurationProperty(property);
 		Object result = property.getValue();
 		result = this.placeholdersResolver.resolvePlaceholders(result);
@@ -328,7 +310,7 @@ public class Binder {
 	}
 
 	private Object bindBean(ConfigurationPropertyName name, Bindable<?> target,
-			BindHandler handler, Context context, boolean allowRecursiveBinding) {
+							BindHandler handler, Context context, boolean allowRecursiveBinding) {
 		if (containsNoDescendantOf(context.getSources(), name)
 				|| isUnbindableBean(name, target, context)) {
 			return null;
@@ -347,7 +329,7 @@ public class Binder {
 	}
 
 	private boolean isUnbindableBean(ConfigurationPropertyName name, Bindable<?> target,
-			Context context) {
+									 Context context) {
 		for (ConfigurationPropertySource source : context.getSources()) {
 			if (source.containsDescendantOf(name) == ConfigurationPropertyState.PRESENT) {
 				// We know there are properties to bind so we can't bypass anything
@@ -362,7 +344,7 @@ public class Binder {
 	}
 
 	private boolean containsNoDescendantOf(Iterable<ConfigurationPropertySource> sources,
-			ConfigurationPropertyName name) {
+										   ConfigurationPropertyName name) {
 		for (ConfigurationPropertySource source : sources) {
 			if (source.containsDescendantOf(name) != ConfigurationPropertyState.ABSENT) {
 				return false;
@@ -373,8 +355,8 @@ public class Binder {
 
 	/**
 	 * Create a new {@link Binder} instance from the specified environment.
-	 * @param environment the environment source (must have attached
-	 * {@link ConfigurationPropertySources})
+	 *
+	 * @param environment the environment source (must have attached {@link ConfigurationPropertySources})
 	 * @return a {@link Binder} instance
 	 */
 	public static Binder get(Environment environment) {
@@ -414,7 +396,7 @@ public class Binder {
 		}
 
 		private <T> T withSource(ConfigurationPropertySource source,
-				Supplier<T> supplier) {
+								 Supplier<T> supplier) {
 			if (source == null) {
 				return supplier.get();
 			}
@@ -422,8 +404,7 @@ public class Binder {
 			this.sourcePushCount++;
 			try {
 				return supplier.get();
-			}
-			finally {
+			} finally {
 				this.sourcePushCount--;
 			}
 		}
@@ -432,8 +413,7 @@ public class Binder {
 			this.beans.push(bean);
 			try {
 				return withIncreasedDepth(supplier);
-			}
-			finally {
+			} finally {
 				this.beans.pop();
 			}
 		}
@@ -446,8 +426,7 @@ public class Binder {
 			increaseDepth();
 			try {
 				return supplier.get();
-			}
-			finally {
+			} finally {
 				decreaseDepth();
 			}
 		}
