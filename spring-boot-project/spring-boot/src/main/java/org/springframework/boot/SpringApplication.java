@@ -279,7 +279,7 @@ public class SpringApplication {
 			configureIgnoreBeanInfo(environment);
 			//打印banner
 			Banner printedBanner = printBanner(environment);
-			//创建容器环境上下文
+			//创建容器上下文
 			context = createApplicationContext();
 			//实例化SpringBootExceptionReporter,用于支持报告关于启动的错误
 			exceptionReporters = getSpringFactoriesInstances(
@@ -325,19 +325,21 @@ public class SpringApplication {
 	private ConfigurableEnvironment prepareEnvironment(
 			SpringApplicationRunListeners listeners,
 			ApplicationArguments applicationArguments) {
-		//获取或创建配置环境
+		//获取或创建配置环境 、
 		// Create and configure the environment
 		ConfigurableEnvironment environment = getOrCreateEnvironment();
 		//配置环境信息  包括配置文件信息，命令行参数信息
 		configureEnvironment(environment, applicationArguments.getSourceArgs());
-		//发布-环境已经准备事件，自应用启动第二次发布事件
+		//发布-系统环境已经初始化完成事件，自应用启动第二次发布事件
 		listeners.environmentPrepared(environment);
 		//绑定配置属性到容器绑定对象    （处理了配置文件的信息到容器绑定对象）
 		bindToSpringApplication(environment);
+		//非自定义环境变量
 		if (!this.isCustomEnvironment) {
 			environment = new EnvironmentConverter(getClassLoader())
 					.convertEnvironmentIfNecessary(environment, deduceEnvironmentClass());
 		}
+		//为指定环境配置属性源
 		ConfigurationPropertySources.attach(environment);
 		return environment;
 	}
@@ -356,15 +358,21 @@ public class SpringApplication {
 	private void prepareContext(ConfigurableApplicationContext context,
 								ConfigurableEnvironment environment, SpringApplicationRunListeners listeners,
 								ApplicationArguments applicationArguments, Banner printedBanner) {
+		//设置容器上下文的环境
 		context.setEnvironment(environment);
+		//为容器上下文执行后续处理
 		postProcessApplicationContext(context);
+		//执行初始化ApplicationContextInitializer。包括factorie中的和自定义的
 		applyInitializers(context);
+		//发布容器上下文已经准备好的事件，并通知各监听器
 		listeners.contextPrepared(context);
+		//打印配置文件的信息
 		if (this.logStartupInfo) {
 			logStartupInfo(context.getParent() == null);
 			logStartupProfileInfo(context);
 		}
 		// Add boot specific singleton beans
+		//注册启动参数bean.将容器指定的参数封装为bean 注入容器
 		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
 		beanFactory.registerSingleton("springApplicationArguments", applicationArguments);
 		if (printedBanner != null) {
@@ -374,10 +382,14 @@ public class SpringApplication {
 			((DefaultListableBeanFactory) beanFactory)
 					.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
+
 		// Load the sources
+		//获取启动类指定的source
 		Set<Object> sources = getAllSources();
 		Assert.notEmpty(sources, "Sources must not be empty");
+		//加载启动类并注入容器
 		load(context, sources.toArray(new Object[0]));
+		//发布 容器已加载事件
 		listeners.contextLoaded(context);
 	}
 
@@ -489,6 +501,7 @@ public class SpringApplication {
 		}
 		switch (this.webApplicationType) {
 			case SERVLET:
+				//将系统变量和运行环境变量加载到父类的MutablePropertySources中去
 				return new StandardServletEnvironment();
 			case REACTIVE:
 				return new StandardReactiveWebEnvironment();
